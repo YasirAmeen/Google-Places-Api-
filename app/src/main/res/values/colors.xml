@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="dth_green">#01A65A</color>
+    <color name="dth_yellow">#F4B301</color>
+    <color name="dth_grey">#39484F</color>
+    <color name="dth_white">#FEFEFD</color>
+    <color name="dth_red">#FE0000</color>
+    <color name="dth_blue">#0A09EB</color>
+    <color name="dth_black">#000000</color>
+    <color name="dth_pink">#ED383F</color>
+
+
+
+</resources>
