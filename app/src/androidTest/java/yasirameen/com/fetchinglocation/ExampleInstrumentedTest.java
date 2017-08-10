@@ -1,4 +1,4 @@
-package yasirameen.com.ubermarker;
+package yasirameen.com.fetchinglocation;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

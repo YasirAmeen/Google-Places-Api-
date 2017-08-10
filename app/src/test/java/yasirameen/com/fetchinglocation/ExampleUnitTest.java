@@ -1,4 +1,4 @@
-package yasirameen.com.ubermarker;
+package yasirameen.com.fetchinglocation;
 
 import org.junit.Test;
 
