@@ -1,7 +1,9 @@
 package yasirameen.com.fetchinglocation;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -10,9 +12,19 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.Filter;
+import android.widget.Filterable;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -27,6 +39,8 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStates;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -35,6 +49,18 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 
 import com.google.android.gms.maps.model.LatLng;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
@@ -49,15 +75,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleApiClient googleApiClient;
     private Location mLastLocation;
     private LocationRequest request;
+    View mapView;
+    private AutoCompleteTextView locationTextView;
+
     private boolean mRequestingLocationUpdates;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
-         mapFragment = (MapFragment) getFragmentManager()
+        ActionBar ab = getSupportActionBar();
+        ab.hide();
+
+        locationTextView = (AutoCompleteTextView) findViewById(R.id.location_text);
+        mapFragment = (MapFragment) getFragmentManager()
                 .findFragmentById(R.id.map);
+        mapView = mapFragment.getView();
         mapFragment.getMapAsync(this);
 
        CheckMapPermission();
@@ -68,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
 
         mMap = googleMap;
+
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -82,8 +119,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         //This line will show your current location on Map with GPS dot
         mMap.setMyLocationEnabled(true);
+        View locationButton = ((View) mapView.findViewById(Integer.parseInt("1")).getParent()).findViewById(Integer.parseInt("2"));
+        RelativeLayout.LayoutParams rlp = (RelativeLayout.LayoutParams) locationButton.getLayoutParams();
+        // position on right bottom
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0);
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);rlp.setMargins(0,0,50,50);
 
+        mMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+            @Override
+            public boolean onMyLocationButtonClick() {
 
+                locationTextView.setHint("Search Location");
+                locationTextView.setFocusableInTouchMode(false);
+                locationTextView.setFocusable(false);
+                locationTextView.setFocusableInTouchMode(true);
+                locationTextView.setFocusable(true);
+                return false;
+            }
+        });
     }
 
     @Override
@@ -145,8 +198,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onResult(@NonNull LocationSettingsResult result) {
                 final Status status = result.getStatus();
-                final LocationSettingsStates states = result.getLocationSettingsStates();
-
                 switch (status.getStatusCode()) {
 
                     case LocationSettingsStatusCodes.SUCCESS:
@@ -237,23 +288,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     LatLng positionUpdate = new LatLng(location.getLatitude(), location.getLongitude());
                     CameraUpdate update = CameraUpdateFactory.newLatLngZoom(positionUpdate, 15);
                     mMap.animateCamera(update);
-                   /* mProgress.setVisibility(View.GONE);
 
-                    Prefs.putString("ProfileLat", String.valueOf(mLastLocation.getLatitude()));
-                    Prefs.putString("ProfileLng", String.valueOf(mLastLocation.getLongitude()));
-                    ArrayList<String> locationAddress = Constatnts.getAddress(LocationActivity.this, mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    GooglePlacesAutocompleteAdapter adapter = new  GooglePlacesAutocompleteAdapter(MainActivity.this, R.layout.autocompletelistitem);
+                    locationTextView.setAdapter(adapter);
 
-                    String locationInString = locationAddress.get(0) + ", " + locationAddress.get(1) + ", " + locationAddress.get(3);
-                    Prefs.putString("ProfileLocation", "" + locationAddress.get(0) + ", " + locationAddress.get(1) + ", " + locationAddress.get(3));
-
-                    location_profile.setText(locationInString);
-                    String CounryCode = getPosition(mLastLocation.getLatitude(),mLastLocation.getLongitude());
-                    Prefs.putString("countryCode",CounryCode);
-
-                    mMap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(),location.getLongitude())).icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_user)));
+                    locationTextView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 
 
-*/
+                            InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                            in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
+                            String str = (String) adapterView.getItemAtPosition(i);
+                            String[] places = str.split("@");
+                            String place_id = places[1];
+
+                            locationTextView.setText("");
+                            locationTextView.setHint(places[0]);
+                            //getLatLng Method is not built-in method, find this method below
+                            getLatLang(place_id);
+
+                        }
+                    });
 
                 } catch (Exception ex) {
 
@@ -310,6 +366,37 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
             break;
         }
+    }
+
+
+    public void getLatLang(String placeId) {
+        Places.GeoDataApi.getPlaceById(googleApiClient, placeId)
+                .setResultCallback(new ResultCallback<PlaceBuffer>() {
+                    @Override
+                    public void onResult(PlaceBuffer places) {
+                        if (places.getStatus().isSuccess() && places.getCount() > 0) {
+                            final Place place = places.get(0);
+                            LatLng latLng = place.getLatLng();
+
+                            try {
+
+                                CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latLng, 15);
+                                mMap.animateCamera(update);
+                            }
+                            catch (Exception ex) {
+
+                                ex.printStackTrace();
+                                Log.e("MapException",ex.getMessage());
+
+                            }
+
+                            Log.i("place", "Place found: " + place.getName());
+                        } else {
+                            Log.e("place", "Place not found");
+                        }
+                        places.release();
+                    }
+                });
     }
 
 
